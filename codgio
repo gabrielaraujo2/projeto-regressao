@@ -1,0 +1,580 @@
+## Projeto final - Modelos de Regressão 2
+
+# Gabriel Araujo
+# Prof Francisco Cribari Neto
+
+#############################X#################################
+
+# Carregando pacotes úteis para análise
+library(ggplot2)
+library(dplyr)
+library(MASS)
+library(tseries)
+library(fastDummies)
+library(lmtest)
+library(leaps)
+library(corrplot)
+library(ecostats)
+library(car)
+library(lmridge)
+library(lmridge)
+
+# Carregando o conjunto de dados
+dados <- read.csv("C:\\Estatística\\Estatística 2020.2\\Regressão 2\\projeto\\CarPrice_Assignment.csv")
+
+#Verificando as variáveis contidas no conjunto de dados
+glimpse(dados)
+summary(dados)
+
+#Criando box-plot dos preços
+boxplot(dados$price, ylab = "Preço", col = "lightblue",
+        pars = list(boxwex = .9, staplewex = 0.3, outwex = 0.1))
+title("Gráfico de Box-Plot dos Preços dos Veículos")
+
+#distribuição dos preços
+truehist(dados$price, nbin = 15, xlab = "Preço")
+title("Distribuição dos Preços dos Veículos")
+
+# Gráfico de dispersão entre price, citympg, highwaympg
+
+Var1 <- cbind(dados$price, dados$citympg, dados$highwaympg)
+pairs(Var1, labels = c("Price", "CityMPG", "HighwayMPG"),
+      col = "darkblue")
+
+##Coeficiente de correlação entre eles
+Cor1 <- cor(Var1)
+colnames(Cor1) <- c("Price", "CityMPG", "HighwayMPG")
+rownames(Cor1) <- c("Price", "CityMPG", "HighwayMPG")
+
+
+#Gráfico de disperção entre as características físicas do carro
+Var2 <- cbind(dados$price, dados$wheelbase,dados$carlength, dados$carheight,
+              dados$carwidth, dados$curbweight)
+
+pairs(Var2, labels = c("Price", "WheelBase","CarLength", "CarHeight",
+                       "CarWidth", "CurbWeight"),
+      col = "darkblue", lower.panel = NULL)
+
+Cor2 <- cor(Var2)
+colnames(Cor2) <- c("Price", "WheelBase","CarLength", "CarHeight",
+                    "CarWidth", "CurbWeight")
+rownames(Cor2) <- c("Price", "WheelBase","CarLength", "CarHeight",
+                    "CarWidth", "CurbWeight")
+
+
+corrplot(Cor2, method="color",  
+         type="upper", order="hclust", 
+         addCoef.col = "black",
+         tl.col="black", tl.srt=45, 
+         sig.level = 0.01, insig = "blank", 
+         diag=FALSE 
+)
+
+
+#Característica do mortor do veículo
+
+Var3 <- cbind(dados$price, dados$enginesize,
+              dados$boreratio, dados$horsepower)
+
+Cor3 <- cor(Var3)
+colnames(Cor3) <- c("Price", "EngineSize", "BoreRatio", "HorsePower")
+rownames(Cor3) <- c("Price", "EngineSize", "BoreRatio", "HorsePower")
+
+pairs(Var3, labels = c("Price", "EngineSize", "BoreRatio", "HorsePower"),
+      col = "darkblue", lower.panel = NULL)
+
+corrplot(Cor3, method="color", 
+         type="upper", order="hclust", 
+         addCoef.col = "black",
+         tl.col="black", tl.srt=45, 
+         sig.level = 0.01, insig = "blank", 
+         diag=FALSE 
+)
+
+
+#Correlação entre todas as variáveis
+Var <- cbind(dados$price, dados$citympg, dados$highwaympg,
+             dados$wheelbase,dados$carlength, dados$carheight,
+             dados$carwidth, dados$curbweight,
+             dados$enginesize,
+             dados$boreratio, dados$horsepower)
+Cor <- cor(Var)
+colnames(Cor) <- c("Price", "CityMPG", "HighwayMPG",
+                   "WheelBase", "CarLength", "Carheight",
+                   "CarWidth", "CurbWeight", "EngineSize",
+                   "BoreRatio", "HorsePower")
+rownames(Cor) <- c("Price", "CityMPG", "HighwayMPG",
+                   "WheelBase", "CarLength", "Carheight",
+                   "CarWidth", "CurbWeight", "EngineSize",
+                   "BoreRatio", "HorsePower")
+
+
+corrplot(Cor, method="color",
+         addCoef.col = "black",
+         tl.col="black", tl.srt=45, 
+         sig.level = 0.01, insig = "blank", 
+         diag=T, number.digits = 2, tl.cex = .8,
+         number.cex = .8
+)
+
+
+
+#Análise das variáveis categóricas
+
+
+#Sistema de Combustível OK!
+
+ggplot(dados, aes(x = fuelsystem, y = price, 
+                  fill = fuelsystem))+
+  labs(title = "Box-plot do Sistema de Combustível")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_boxplot()
+
+ggplot(dados, aes(x = fuelsystem, fill = fuelsystem))+
+  geom_bar(width=0.5)+
+  labs(title = "Número de Veículos (Sistema de Combustível)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Tipo do Motor OK
+ggplot(dados, aes(x = enginetype, y = price, 
+                  fill = enginetype))+
+  labs(title = "Box-plot de Tipo do Motor")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_boxplot()
+
+ggplot(dados, aes(x = enginetype, fill = enginetype))+
+  geom_bar(width=0.5)+
+  labs(title = "Número de Veículos (Tipo do Motor)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Sistema de Aspiração OK
+ggplot(dados, aes(x = aspiration, y = price, 
+                  fill = aspiration))+
+  labs(title = "Box-plot Sistema de Aspiração")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_boxplot()
+
+ggplot(dados, aes(x = aspiration, fill = aspiration))+
+  geom_bar(width=0.5)+
+  labs(title = "Número de Veículos (Sistema de Aspiração)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+#Tipo de Combustível OK
+ggplot(dados, aes(x = fueltype, y = price, 
+                  fill = fueltype))+
+  labs(title = "Box-plot Tipo de Combustível")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_boxplot()
+
+
+ggplot(dados, aes(x = fueltype, fill = fueltype))+
+  geom_bar(width=0.5)+
+  labs(title = "Número de Veículos (Tipo de Combustível)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+# Tipo de tração
+ggplot(dados, aes(x = drivewheel, y = price, 
+                  fill = drivewheel))+
+  labs(title = "Box-plot Tipo de Tração")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_boxplot()
+
+ggplot(dados, aes(x = drivewheel, fill = drivewheel))+
+  geom_bar(width=0.5)+
+  labs(title = "Número de Veículos (Tipo de Tração)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+#Corpo do Carro OK
+ggplot(dados, aes(x = carbody, y = price, 
+                  fill = carbody))+
+  geom_boxplot()+
+  labs(title = "Box-plot Corpo do Carro")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+ggplot(dados, aes(x = carbody, fill = carbody))+
+  geom_bar(width=0.5)+
+  labs(title = "Número de Veículos (Corpo do Carro)")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+#Número de portas OK
+ggplot(dados, aes(x = doornumber, y = price, 
+                  fill = doornumber))+
+  geom_boxplot()+
+  labs(title = "Box-plot Número de Portas")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+ggplot(dados, aes(x = doornumber, fill = doornumber))+
+  geom_bar(width=0.5)+
+  labs(title = "Número de Veículos (Nº de Portas)")+
+  theme(plot.title = element_text(hjust = 0.5))
+  
+  
+  # Variáveis dummies
+dummy <- c('fueltype', 'aspiration', 'doornumber',
+           'carbody', 'drivewheel', 'enginelocation', 'enginetype',
+           'fuelsystem')
+
+df <- dummy_cols(dados, select_columns = dummy)
+df1 <- df
+set.seed(123)
+amostra <- sample(1:205, 0.15*205, replace = F)
+df <- df1[-amostra,]
+df_teste <- df1[amostra,]
+#Removendo as variáveis que não contém valores numéricos
+df$CarName <- NULL; df_teste$CarName <- NULL
+df$fueltype <- NULL; df_teste$fueltype <- NULL
+df$aspiration <- NULL; df_teste$aspiration <- NULL
+df$doornumber <- NULL; df_teste$doornumber <- NULL
+df$carbody <- NULL; df_teste$carbody <- NULL
+df$drivewheel <- NULL; df_teste$drivewheel <- NULL
+df$enginelocation <- NULL; df_teste$enginelocation <- NULL
+df$enginetype <- NULL; df_teste$enginetype <- NULL
+df$cylindernumber <- NULL; df_teste$cylindernumber <- NULL
+df$fuelsystem <- NULL; df_teste$fuelsystem <- NULL
+df$car_ID <- NULL; df_teste$car_ID <- NULL
+df$symboling <- NULL; df_teste$symboling <- NULL
+df_teste$price <- NULL
+
+#Modelo geral
+
+fit <- lm(formula = price~., data = df)
+summary(fit)
+
+##############################################################################
+
+
+#Modelo 1
+df_train1 <- df%>%
+  dplyr::select(wheelbase, boreratio, horsepower, citympg,price,
+                carbody_convertible, drivewheel_fwd, fueltype_gas,
+                aspiration_std)
+
+fit1 <- lm(price~0 + ., data = df_train1)
+summary(fit1)
+
+#Diagnóstico Modelo 1
+
+# Modelo 1
+
+cooksd1 <- cooks.distance(fit1)
+plot(cooksd1, pch="*", cex=2, main="Observações Influentes - Distância de Cooks")  # plot cook's distance
+abline(h = 4*mean(cooksd1, na.rm=T), col="red")
+text(x=1:length(cooksd1)+1, y=cooksd1, 
+     labels=ifelse(cooksd1>4*mean(cooksd1, na.rm=T),
+                   names(cooksd1),""), col="red")
+
+## Identificando os pontos influentes
+p_fit1 <- c()
+rstand_fit1 <- rstandard(fit1)
+for (i in 1:nrow(df)){
+  if(abs(rstand_fit1[i]) > 2){
+    p_fit1 <- append(p_fit1, i)
+  }
+}
+p_fit1
+
+
+plotenvelope(fit1, envelope.col = "lightblue")
+#Análise dos Resíduos
+
+#Distribuição dos resíduos
+
+jarque.bera.test(fit1$residuals)
+truehist(fit1$residuals, xlab = "residuals", ylab = "prob",
+         prob = T)
+m1 <- mean(fit1$residuals)
+sd1 <- sd(fit1$residuals)
+x <- c(seq(-8104.408,17991.35, 10))
+y <- c(seq(-8104.408,17991.35, 10))
+y <- dnorm(y, mean = m1, sd = sd1)
+lines(x, y, col = "red")
+qqnorm(fit1$residuals, col = "red")
+qqline(fit1$residuals, col = "black")
+
+jarque.bera.test(fit1$residuals)
+
+
+## Tranformando usando o método box-cox
+
+bc=boxcox(fit1)
+lambdahat=bc$x[bc$y==max(bc$y)]
+lambdahat
+# vari´avel dependente transformada
+price.bc=(df$price^(lambdahat)-1)/lambdahat
+res1 <- (fit1$residuals^(lambdahat)-1)/lambdahat
+hist(price.bc)
+jarque.bera.test(price.bc)
+df_train1.bc <- df_train1
+df_train1.bc$price <- NULL; df_train1.bc$price.bc <- price.bc
+df_train1.bc$aspiration_std <- NULL
+fit1.bc <- lm(price.bc~0 + ., data = df_train1.bc)
+summary(fit1.bc)
+plotenvelope(fit1.bc, envelope.col = "blue")
+
+#Distribuição dos resíduos transformados
+truehist(fit1.bc$residuals, xlab = "residuals", ylab = "prob",
+         prob = T)
+
+jarque.bera.test(fit1.bc$residuals)
+
+predict(fit1.bc, df_teste[1,])
+
+############X####################################
+df1$price[amostra][5]
+predict(fit1, df_teste[5,])
+
+
+
+
+#Modelo 1 Aux
+
+
+#Modelo 1
+df_train1_aux <- df%>%
+  dplyr::select(wheelbase, boreratio, horsepower, citympg,price)
+
+fit1_aux <- lm(price~0 + ., data = df_train1_aux)
+summary(fit1_aux)
+
+#Diagnóstico Modelo 1
+
+# Modelo 1
+
+cooksd1_aux <- cooks.distance(fit1_aux)
+plot(cooksd1_aux, pch="*", cex=2, main="Observações Influentes - Distância de Cooks")  # plot cook's distance
+abline(h = 4*mean(cooksd1_aux, na.rm=T), col="red")
+text(x=1:length(cooksd1_aux)+1, y=cooksd1_aux, 
+     labels=ifelse(cooksd1_aux>4*mean(cooksd1_aux, na.rm=T),
+                   names(cooksd1_aux),""), col="red")
+
+## Identificando os pontos influentes
+p_fit1_aux <- c()
+rstand_fit1_aux <- rstandard(fit1_aux)
+for (i in 1:205){
+  if(abs(rstand_fit1_aux[i]) > 2){
+    p_fit1_aux <- append(p_fit1_aux, i)
+  }
+}
+p_fit1_aux
+
+
+plotenvelope(fit1_aux, envelope.col = "lightblue")
+#Análise dos Resíduos
+
+#Distribuição dos resíduos
+
+jarque.bera.test(fit1$residuals)
+truehist(fit1$residuals, xlab = "residuals", ylab = "prob",
+         prob = T)
+m1 <- mean(fit1$residuals)
+sd1 <- sd(fit1$residuals)
+x <- c(seq(-8104.408,17991.35, 10))
+y <- c(seq(-8104.408,17991.35, 10))
+y <- dnorm(y, mean = m1, sd = sd1)
+lines(x, y, col = "red")
+qqnorm(fit1$residuals, col = "red")
+
+lines(dnorm(fit1$residuals, m, sd))
+jarque.bera.test(fit1$residuals)
+
+## Tranformando usando o método box-cox
+
+bc=boxcox(fit1)
+lambdahat=bc$x[bc$y==max(bc$y)]
+lambdahat
+# vari´avel dependente transformada
+price.bc=(df$price^(lambdahat)-1)/lambdahat
+res1 <- (fit1$residuals^(lambdahat)-1)/lambdahat
+hist(price.bc)
+jarque.bera.test(price.bc)
+df_train1.bc <- df_train1
+df_train1.bc$price <- NULL; df_train1.bc$price.bc <- price.bc
+df_train1.bc$aspiration_std <- NULL
+df_train1$boreratio <- NULL
+
+View(df_train1.bc)
+fit1.bc <- lm(price.bc ~ 0 + ., data = df_train1.bc)
+
+summary(fit1.bc)
+
+plotenvelope(fit1.bc, envelope.col = "blue")
+car::vif(fit1.bc)
+#Distribuição dos resíduos transformados
+truehist(fit1.bc$residuals, xlab = "residuals", ylab = "prob",
+         prob = T)
+jarque.bera.test(fit1.bc$residuals)
+het <- sandwich::vcovHC(fit1.bc, "HC4")
+het1 <- sandwich::vcovHC(fit1, "HC4")
+#Multicolinearidade
+
+View(het1)
+
+df_train2 <- df %>%
+  dplyr::select(price, highwaympg, enginesize,
+                fueltype_gas, horsepower, 
+                carbody_sedan,
+                drivewheel_fwd)
+
+fit2 <- lm(price~ 0+., data = df_train2)
+summary(fit2)
+plotenvelope(fit2, envelope.col = "blue")
+
+outlierTest(fit2)
+
+cooksd2 <- cooks.distance(fit2)
+plot(cooksd2, pch="*", cex=2, main="Observações Influentes - Distância de Cooks")  # plot cook's distance
+abline(h = 4*mean(cooksd2, na.rm=T), col="red")  # add cutoff line
+text(x=1:length(cooksd2)+1, y=cooksd2, labels=ifelse(cooksd2>4*mean(cooksd2, na.rm=T),names(cooksd2),""), col="red")  # add labels
+
+point <- c()
+r2 <- rstandard(fit2)
+
+for (i in 1:length(df)){
+  if(abs(r2[i]) > 2){
+    point <- append(point, i)
+  }
+}
+
+
+point
+
+#Modelo 3
+df_train3 <- df %>%
+  dplyr::select(horsepower, highwaympg,
+                fueltype_gas, aspiration_std, highwaympg,
+                drivewheel_fwd, carbody_sedan,
+                enginetype_ohc, carbody_convertible,
+                price)
+
+fit3 <- lm(price~0 + ., data = df_train3)
+summary(fit3)
+
+# Verificando outliers
+
+## Diagnóstico Modelo 3
+
+plotenvelope(fit, envelope.col = "blue")
+outlierTest(fit)
+
+cooksd3 <- cooks.distance(fit3)
+plot(cooksd3, pch="*", cex=2, main="Observações Influentes - Distância de Cooks")  # plot cook's distance
+abline(h = 4*mean(cooksd3, na.rm=T), col="red")  # add cutoff line
+text(x=1:length(cooksd3)+1, y=cooksd3, labels=ifelse(cooksd3>4*mean(cooksd3, na.rm=T),names(cooksd3),""), col="red")  # add labels
+
+for (i in 1:length(df)){
+  if(abs(c[i]) > 2){
+    point <- append(point, i)
+    print(i)
+  }
+}
+length(point)
+
+
+
+df_train5 <- df%>%
+  dplyr::select(wheelbase, 
+                horsepower, highwaympg,
+                price, fueltype_gas, carbody_sedan,
+                )
+
+fit5 <- lm(price~0 + ., data = df_train5)
+summary(fit5)
+plotenvelope(fit2, col = "blue", envelope.col = "red")
+
+max(fit5$residuals)
+## Modelo 1
+
+cooksd1 <- cooks.distance(fit1)
+plot(cooksd1, pch="*", cex=2, main="Observações Influentes - Distância de Cooks")  # plot cook's distance
+abline(h = 4*mean(cooksd1, na.rm=T), col="red")
+text(x=1:length(cooksd1)+1, y=cooksd1, 
+     labels=ifelse(cooksd1>4*mean(cooksd1, na.rm=T),
+                   names(cooksd1),""), col="red")
+
+## Identificando os pontos influentes
+p_fit1 <- c()
+rstand_fit1 <- rstandard(fit1)
+for (i in 1:205){
+  if(abs(rstand_fit1[i]) > 2){
+    p_fit1 <- append(p_fit1, i)
+  }
+}
+p_fit1
+
+#Análise dos Resíduos
+
+#Distribuição dos resíduos
+
+jarque.bera.test(fit1$residuals)
+truehist(fit1$residuals, xlab = "residuals", ylab = "prob",
+         prob = T)
+m1 <- mean(fit1$residuals)
+sd1 <- sd(fit1$residuals)
+x <- c(seq(-8104.408,17991.35, 10))
+y <- c(seq(-8104.408,17991.35, 10))
+y <- dnorm(y, mean = m1, sd = sd1)
+lines(x, y, col = "red")
+qqnorm(fit1$residuals, col = "red")
+qqline(fit1$residuals, col = "black")
+
+lines(dnorm(fit1$residuals, m, sd))
+jarque.bera.test(fit1$residuals)
+
+############X####################################
+
+summary(fit)
+etachapeu1 = fitted.values(fit1)
+sigmachapeu1 = sqrt(crossprod(residuals(fit1))/df.residual(fit1))
+
+residuosabs = sort(abs(rstandard(fit1)))
+residamat = matrix(0, k, 205)
+
+summary(fit1)
+sigmachapeu1
+#Distribuição dos resíduos
+truehist(fit1$residuals, xlab = "residuals", ylab = "prob",
+         prob = T)
+m <- mean(fit1$residuals)
+sd <- sd(fit1$residuals)
+x <- c(seq(-8104.408,17991.35, 10))
+y <- c(seq(-8104.408,17991.35, 10))
+y <- dnorm(y, mean = m, sd = sd)
+lines(x, y, col = "red")
+
+## Tranformando usando o método box-cox
+
+bc=boxcox(fit1)
+lambdahat=bc$x[bc$y==max(bc$y)]
+lambdahat
+# vari´avel dependente transformada
+price.bc=(df$price^(lambdahat)-1)/lambdahat
+res1 <- (fit1$residuals^(lambdahat)-1)/lambdahat
+hist(price.bc)
+jarque.bera.test(price.bc)
+df_train1.bc <- df_train1
+df_train1.bc$price <- NULL; df_train1.bc$price.bc <- price.bc
+df_train1.bc$carbody_sedan <- df$carbody_sedan
+
+fit1.bc <- lm(price.bc~ ., data = df_train1.bc)
+summary(fit1.bc)
+
+plotenvelope(fit1.bc, envelope.col = "blue")
+
+car::vif(fit1.bc)
+#Distribuição dos resíduos transformados
+truehist(fit1.bc$residuals, xlab = "residuals", ylab = "prob",
+         prob = T)
+
+
+#Multicolinearidade
+
+car::vif(fit1.bc)
+
